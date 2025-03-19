@@ -46,10 +46,11 @@ MFRC522::StatusCode MFRC522::PCD_CalculateCRC(byte *data,    ///< In: Pointer to
   _driver.PCD_WriteRegister(PCD_Register::FIFOLevelReg, 0x80);      // FlushBuffer = 1, FIFO initialization
   _driver.PCD_WriteRegister(PCD_Register::FIFODataReg, length, data);  // Write data to the FIFO
   _driver.PCD_WriteRegister(PCD_Register::CommandReg, PCD_Command::PCD_CalcCRC);    // Start the calculation
-  
+
+  delay(5);
   // Wait for the CRC calculation to complete. Each iteration of the while-loop takes 17.73μs.
   // TODO check/modify for other architectures than Arduino Uno 16bit
-  for(uint16_t i = 5000; i > 0; i--) {
+  for(uint16_t i = 1; i > 0; i--) {
     // DivIrqReg[7..0] bits are: Set2 reserved reserved MfinActIRq reserved CRCIRq reserved reserved
     byte n = _driver.PCD_ReadRegister(PCD_Register::DivIrqReg);
     if(n & 0x04) {                  // CRCIRq bit set - calculation done
@@ -138,7 +139,7 @@ void MFRC522::PCD_Reset() {
   do {
     // Wait for the PowerDown bit in CommandReg to be cleared (max 3x50ms).
     // Todo: check what lower delay is effective. 50ms block is very long.
-    delay(50);
+    delay(5);
   } while((_driver.PCD_ReadRegister(PCD_Register::CommandReg) & (1 << 4)) && ((++countTries) < 3 /* Timeout after 3 tries. */));
 } // End PCD_Reset()
 
@@ -398,8 +399,10 @@ MFRC522::StatusCode MFRC522::PCD_CommunicateWithPICC(byte command,    ///< The c
   // In PCD_Init() we set the TAuto flag in TModeReg. This means the timer automatically starts when the PCD stops transmitting.
   // Each iteration of the do-while-loop takes 17.86μs.
   // TODO check/modify for other architectures than Arduino Uno 16bit
+  delay(5);
+
   uint16_t i;
-  for(i = 2000; i > 0; i--) {
+  for(i = 1; i > 0; i--) {
     byte n = _driver.PCD_ReadRegister(PCD_Register::ComIrqReg);  // ComIrqReg[7..0] bits are: Set1 TxIRq RxIRq IdleIRq HiAlertIRq LoAlertIRq ErrIRq TimerIRq
     if(n & waitIRq) {          // One of the interrupts that signal success has been set.
       break;
@@ -550,7 +553,7 @@ MFRC522::StatusCode MFRC522::PICC_Select(Uid *uid,      ///< Pointer to Uid stru
   byte                bufferUsed;        // The number of bytes used in the buffer, ie the number of bytes to transfer to the FIFO.
   byte                rxAlign;          // Used in BitFramingReg. Defines the bit position for the first bit received.
   byte                txLastBits;        // Used in BitFramingReg. The number of valid bits in the last transmitted byte. 
-  byte                *responseBuffer;
+  byte                *responseBuffer = NULL;
   byte                responseLength;
   
   // Description of buffer structure:
