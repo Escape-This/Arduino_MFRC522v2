@@ -5,7 +5,6 @@ MFRC522.zip
 build
 cmake
 cmake-build-debug
-CMakeLists.txt
 
 # ignore platformio files
 .pio
